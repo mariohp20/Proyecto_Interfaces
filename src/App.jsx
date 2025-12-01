@@ -7,6 +7,8 @@ import Dashboard from '@/pages/Dashboard';
 import LessonPage from '@/pages/LessonPage';
 import ProfilePage from '@/pages/ProfilePage';
 import { loginUser, getUser } from '@/services/api';
+import LeaderboardPage from './pages/LeaderboardPage';
+import AchievementsPage from './pages/AchievementsPage';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -88,6 +90,14 @@ function App() {
           <Route 
             path="/profile" 
             element={user ? <ProfilePage user={user} onLogout={handleLogout} /> : <Navigate to="/" />} 
+          />
+          <Route 
+            path="/leaderboard" 
+            element={user ? <LeaderboardPage currentUser={user} /> : <Navigate to="/" />} 
+          />
+          <Route 
+            path="/achievements" 
+            element={user ? <AchievementsPage user={user} /> : <Navigate to="/" />} 
           />
         </Routes>
         <Toaster />

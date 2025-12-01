@@ -3,13 +3,13 @@
 @tailwind components;
 @tailwind utilities;
 
-
 body {
-  @apply bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 text-slate-800;
+  @apply bg-background text-foreground transition-colors duration-300 antialiased;
   font-family: 'Poppins', sans-serif;
   margin: 0;
   padding: 0;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 * {
@@ -17,43 +17,96 @@ body {
 }
 
 @layer utilities {
+  /* TARJETAS: Mejor contraste en modo oscuro (menos transparencia para leer mejor) */
   .glass-effect {
-    @apply bg-white/70 backdrop-blur-xl border border-white/20 shadow-xl;
+    @apply bg-white/90 dark:bg-slate-900/95 backdrop-blur-md border border-white/50 dark:border-slate-700 shadow-lg dark:shadow-black/40;
   }
   
+  /* TEXTOS: Colores más vivos y legibles */
   .gradient-text {
-    @apply bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-emerald-700 to-teal-600 dark:from-emerald-400 dark:to-cyan-300 bg-clip-text text-transparent font-extrabold;
   }
   
+  /* BOTONES: Más brillo en hover */
   .btn-primary {
-    @apply bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold rounded-2xl px-6 py-3 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105;
-  }
-  
-  .btn-secondary {
-    @apply bg-white/80 hover:bg-white text-slate-700 font-semibold rounded-2xl px-6 py-3 shadow-md hover:shadow-lg transition-all duration-300;
+    @apply bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold rounded-xl px-6 py-3 shadow-lg hover:shadow-emerald-500/40 transition-all duration-300 transform hover:scale-[1.02] active:scale-95;
   }
   
   .card-hover {
-    @apply transition-all duration-300 hover:scale-105 hover:shadow-2xl cursor-pointer;
+    @apply transition-all duration-300 hover:scale-[1.02] hover:shadow-xl cursor-pointer;
   }
 }
 
 :root {
-  --primary: 142 76% 36%;
-  --secondary: 210 40% 96.1%;
-  --accent: 142 76% 36%;
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
+  /* --- MODO DÍA (Claro y Limpio) --- */
+  --background: 210 40% 98%;      /* #f8fafc */
+  --foreground: 222.2 84% 4.9%;   /* #020817 */
+  
   --card: 0 0% 100%;
   --card-foreground: 222.2 84% 4.9%;
+  
   --popover: 0 0% 100%;
   --popover-foreground: 222.2 84% 4.9%;
+  
+  --primary: 150 100% 35%;        /* Verde esmeralda fuerte */
+  --primary-foreground: 0 0% 100%;
+  
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  
   --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 142 76% 36%;
-  --radius: 0.5rem;
+  --muted-foreground: 215.4 16.3% 40%; /* Gris medio */
+  
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+  
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 210 40% 98%;
+  
+  --border: 214.3 31.8% 85%;      /* Bordes visibles */
+  --input: 214.3 31.8% 91.4%;
+  --ring: 142 76% 36%;
+  --radius: 0.75rem;
+}
+
+.dark {
+  /* --- MODO NOCHE (Alto Contraste y Legibilidad) --- */
+  --background: 222 47% 11%;      /* #0f172a (Azul muy oscuro, casi negro) */
+  --foreground: 210 40% 98%;      /* #f8fafc (Blanco brillante) */
+  
+  --card: 217 33% 17%;            /* #1e293b (Gris azulado oscuro para tarjetas) */
+  --card-foreground: 210 40% 98%;
+  
+  --popover: 222 47% 11%;
+  --popover-foreground: 210 40% 98%;
+  
+  --primary: 150 60% 50%;         /* Verde neón legible */
+  --primary-foreground: 144.9 80.4% 10%;
+  
+  --secondary: 217 33% 17%;
+  --secondary-foreground: 210 40% 98%;
+  
+  --muted: 217 33% 17%;
+  --muted-foreground: 215 20.2% 75%; /* Gris claro (casi blanco) para subtítulos */
+  
+  --accent: 217 33% 17%;
+  --accent-foreground: 210 40% 98%;
+  
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+  
+  --border: 217 33% 30%;          /* Bordes claros para definir límites */
+  --input: 217 33% 20%;
+  --ring: 142 70% 50%;
+}
+
+/* Animación de sacudida (shake) para errores */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+.animate-shake {
+  animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
 }

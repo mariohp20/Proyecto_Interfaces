@@ -1,105 +1,135 @@
-import React, { useState, useEffect } from 'react';
+// src/components/exercises/CodeExecutionExercise.jsx
+
+import React, { useState, useEffect, useRef } from 'react';
+import Editor from '@monaco-editor/react'; // 💥 Importar el Monaco Editor
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { toast } from '@/components/ui/use-toast';
-import { Play } from 'lucide-react';
+import { Play, Loader2 } from 'lucide-react';
+// Asumo que tiene un hook o una función global para Pyodide
+// Reemplace con su implementación real para Pyodide
+import { runPyodideCode } from '@/lib/pyodideUtils'; 
+import { normalizeOutput } from '@/lib/utils';
 
 const CodeExecutionExercise = ({ exercise, onAnswer, disabled }) => {
-  const [code, setCode] = useState('');
+  // Inicializamos el código con el código inicial del ejercicio
+  const [code, setCode] = useState(exercise.initialCode || '');
   const [output, setOutput] = useState('');
-  const [pyodide, setPyodide] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasChecked, setHasChecked] = useState(false);
+  const [isCorrect, setIsCorrect] = useState(false);
 
+  // Asegura que el código se reinicie si el ejercicio cambia
   useEffect(() => {
-    const loadPyodide = async () => {
-      try {
-        const pyodideInstance = await window.loadPyodide({
-          indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.24.1/full/'
-        });
-        setPyodide(pyodideInstance);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error loading Pyodide:', error);
-        toast({
-          title: "Error",
-          description: "No se pudo cargar el intérprete de Python",
-          variant: "destructive"
-        });
-        setLoading(false);
-      }
-    };
+    setCode(exercise.initialCode || '');
+    setOutput('');
+    setIsLoading(false);
+    setHasChecked(false);
+    setIsCorrect(false);
+  }, [exercise]);
 
-    if (!window.loadPyodide) {
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js';
-      script.onload = loadPyodide;
-      document.head.appendChild(script);
-    } else {
-      loadPyodide();
-    }
-  }, []);
 
-  const runCode = async () => {
-    if (!pyodide || !code.trim()) return;
+  const handleRunCode = async () => {
+    if (isLoading || disabled) return;
+
+    setIsLoading(true);
+    setOutput('Ejecutando código...');
 
     try {
-      pyodide.runPython(`
-        import sys
-        from io import StringIO
-        sys.stdout = StringIO()
-      `);
+      // 💥 SIMULACIÓN DE EJECUCIÓN CON PYODIDE
+      // Esta función debe encargarse de cargar Pyodide si es necesario 
+      // y devolver la salida (stdout) o el error (stderr).
+      const result = await runPyodideCode(code); 
+      
+      setOutput(result.output); // Mostrar la salida
 
-      pyodide.runPython(code);
+      const normalizedUserOutput = normalizeOutput(result.output);
+      const normalizedExpectedOutput = normalizeOutput(exercise.expectedOutput);
+      
+      // Lógica de validación
+      const isCodeCorrect = normalizedUserOutput === normalizedExpectedOutput;      
 
-      const result = pyodide.runPython('sys.stdout.getvalue()');
-      setOutput(result);
+      setIsCorrect(isCodeCorrect);
+      setHasChecked(true);
 
-      const isCorrect = result.trim() === exercise.expectedOutput.trim();
-      onAnswer(isCorrect);
+      // Notificar a LessonPage sólo si la validación es final
+      if (isCodeCorrect) {
+          onAnswer(true); 
+      }
+      
     } catch (error) {
-      setOutput(`Error: ${error.message}`);
-      toast({
-        title: "Error en el código",
-        description: error.message,
-        variant: "destructive"
-      });
+      setOutput(`Error de Ejecución: ${error.message || 'Código inválido'}`);
+      setIsCorrect(false);
+      setHasChecked(true);
+      onAnswer(false);
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  const handleEditorChange = (value) => {
+    setCode(value);
+    // Reiniciar la validación cuando el usuario cambia el código
+    setHasChecked(false);
+    setIsCorrect(false);
+    setOutput('');
+  };
+
   return (
-    <div className="space-y-4">
-      <div className="bg-slate-900 rounded-2xl overflow-hidden">
-        <div className="bg-slate-800 px-4 py-2 flex items-center justify-between">
-          <span className="text-emerald-400 font-mono text-sm">editor.py</span>
-          <Button
-            onClick={runCode}
-            disabled={disabled || loading || !code.trim()}
-            size="sm"
-            className="bg-emerald-600 hover:bg-emerald-700"
-          >
-            <Play className="w-4 h-4 mr-2" />
-            Ejecutar
-          </Button>
-        </div>
-        <textarea
+    <div className="space-y-6">
+      
+      {/* 💥 MONACO EDITOR */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="rounded-lg shadow-xl overflow-hidden border border-gray-300"
+      >
+        <Editor
+          height="300px"
+          language="python"
+          theme="vs-dark" // Tema oscuro que se ve bien en la interfaz PyLingo
           value={code}
-          onChange={(e) => setCode(e.target.value)}
-          disabled={disabled}
-          placeholder="# Escribe tu código aquí..."
-          className="w-full bg-slate-900 text-emerald-400 font-mono text-sm p-4 min-h-[200px] resize-none focus:outline-none"
+          onChange={handleEditorChange}
+          options={{
+            readOnly: disabled,
+            minimap: { enabled: false },
+            fontSize: 14,
+            scrollBeyondLastLine: false,
+            // Sin línea de fondo de código para minimizar la distracción
+            lineNumbersMinChars: 3, 
+          }}
         />
+      </motion.div>
+      
+      {/* Botón de Ejecutar / Verificar */}
+      <Button
+        onClick={handleRunCode}
+        disabled={isLoading || disabled}
+        className="btn-primary w-full text-lg py-6 flex items-center justify-center space-x-2"
+      >
+        {isLoading && <Loader2 className="w-5 h-5 animate-spin" />}
+        {!isLoading && <Play className="w-5 h-5" />}
+        <span>{isLoading ? 'Ejecutando...' : 'Ejecutar Código'}</span>
+      </Button>
+
+      {/* Panel de Consola (Output) */}
+      <div className="p-4 rounded-lg bg-gray-900 text-white font-mono text-sm shadow-inner">
+        <h4 className="font-bold text-teal-400 mb-2">Consola de Salida:</h4>
+        <pre className="whitespace-pre-wrap break-words min-h-[40px] text-gray-300">
+          {output || '// Presiona Ejecutar para ver la salida'}
+        </pre>
       </div>
 
-      {output && (
-        <div className="bg-slate-900 rounded-2xl p-4">
-          <div className="text-slate-400 text-xs mb-2">Salida:</div>
-          <pre className="text-emerald-400 font-mono text-sm whitespace-pre-wrap">{output}</pre>
-        </div>
-      )}
-
-      {loading && (
-        <div className="text-center text-slate-600">
-          Cargando intérprete de Python...
-        </div>
+      {/* Feedback de la Corrección (Aparece si ya se verificó) */}
+      {hasChecked && (
+          <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className={`p-4 rounded-xl border-2 ${isCorrect ? 'border-emerald-500 bg-emerald-50' : 'border-red-500 bg-red-50'}`}
+          >
+              <p className={`font-semibold ${isCorrect ? 'text-emerald-700' : 'text-red-700'}`}>
+                  {isCorrect ? '✅ ¡Solución Correcta! Puedes continuar.' : `❌ Incorrecto. Output Esperado: ${exercise.expectedOutput}`}
+              </p>
+          </motion.div>
       )}
     </div>
   );
